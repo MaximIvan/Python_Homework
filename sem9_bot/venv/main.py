@@ -13,25 +13,36 @@ dp = Dispatcher(bot)
 async def start_message(message: types.Message):
     chat_id = message.chat.id
     await bot.send_message(chat_id, 'Привет, отправь мне ссылку на видео, которое надо скачать\n\
-    c YouTube')
+c YouTube')
 
 @dp.message_handler()
 async def text_message(message: types.Message):
     chat_id = message.chat.id
     url = message.text
     yt = YouTube(url)
-    if message.text.startswith == 'https://www.youtube.com/' or 'https://youtu.be/':
-        await bot.send_message(chat_id, f'*Начинаю загрузку видео* : *{yt.title}*\n'
+    if url.startswith == 'https://www.youtube.com/' or 'https://youtu.be/':
+        await bot.send_message(chat_id, f'*Что хотите загрузить, аудио или видео?*', parse_mode = 'Markdown')
+        if message.text == 'видео':
+            await bot.send_message(chat_id, f'*Начинаю загрузку видео* : *{yt.title}*\n'
                                         f'*С канала *: [{yt.author}]({yt.channel_url})', parse_mode = 'Markdown')
-        await download_youtube_video(url, message, bot)
+            await download_youtube_video(url, message, bot)
+        if message.text == 'аудио':
+            await bot.send_message(chat_id, f'*Начинаю загрузку аудио* : *{yt.title}*\n'
+                                        f'*С канала *: [{yt.author}]({yt.channel_url})', parse_mode = 'Markdown')
+            await download_youtube_audio(url, message, bot)
 
 async def download_youtube_video(url, message, bot):
     yt = YouTube(url)
     stream = yt.streams.filter(progressive = True, file_extension = 'mp4')
     stream.get_highest_resolution().download(f'{message.chat.id}', f'{message.chat.id}_{yt.title}')
-    with open(f'{message.chat.id}/{message.chat.id}_{yt.title}', 'rb') as video:
+    with open(f'{message.chat.id}/{message.chat.id}_{yt.title}', "rb") as video:
         await bot.send_video(message.chat.id, video, caption='*Приятного просмотра *', parse_mode = 'Markdown')
         os.remove(f'{message.chat.id}/{message.chat.id}_{yt.title}')
+
+def download_youtube_audio(url, message, bot):
+    audio = YouTube(url)
+    best_audio = audio.getbestaudio(progressive = True, file_extension = 'mp3')
+    return best_audio.url
 
 if __name__ == '__main__':
     executor.start_polling(dp)
